@@ -1,49 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>YOLOv8 Video & Image Detect</title>
+    <meta charset="UTF-8">
+    <title>YOLO Detection Web</title>
 </head>
 <body>
-    <h2>Detect Ảnh</h2>
-    <form method="POST" enctype="multipart/form-data" action="/detect_image">
-        <label>Chọn mô hình:</label>
+    <h1>🚀 Object Detection với YOLOv8</h1>
+
+    <h2>📸 Detect Ảnh</h2>
+    <form method="POST" action="/detect_image" enctype="multipart/form-data">
+        <label>Chọn ảnh:</label>
+        <input type="file" name="image" required><br>
+        <label>Chọn Model:</label>
         <select name="model_type">
             <option value="yolo">YOLOv8</option>
-            <option value="custom">Model khác</option>
-        </select>
-        <input type="file" name="image">
-        <button type="submit">Detect ảnh</button>
+            <option value="resnet">ResNet</option>
+        </select><br>
+        <label>Ngưỡng confidence (0.1 - 1.0):</label>
+        <input type="number" name="confidence" step="0.1" min="0.1" max="1.0" value="0.5"><br>
+        <button type="submit">Detect</button>
     </form>
+    {% if image_result %}
+        <h3>Kết quả:</h3>
+        <img src="{{ image_result }}" width="640">
+    {% endif %}
 
-    <h2>Thêm video mới</h2>
-
-    <!-- Nút mở webcam -->
+    <h2>🎥 Thêm luồng Video</h2>
     <form method="POST" action="/add_stream_webcam">
-        <input type="hidden" name="model_type" value="yolo">
-        <button type="submit">📷 Mở webcam</button>
+        <label>Model:</label>
+        <select name="model_type">
+            <option value="yolo">YOLOv8</option>
+            <option value="resnet">ResNet</option>
+        </select>
+        <label>Confidence:</label>
+        <input type="number" name="confidence" step="0.1" min="0.1" max="1.0" value="0.5">
+        <button type="submit">📷 Mở Webcam</button>
     </form>
 
-    <br>
-
-    <!-- Nút upload video -->
-    <form method="POST" enctype="multipart/form-data" action="/add_stream_video">
-        <label>Upload video (mp4, avi,...):</label>
+    <form method="POST" action="/add_stream_video" enctype="multipart/form-data">
+        <label>Video File:</label>
         <input type="file" name="video_file" accept="video/*" required>
-        <input type="hidden" name="model_type" value="yolo">
-        <button type="submit">📁 Upload video</button>
+        <label>Model:</label>
+        <select name="model_type">
+            <option value="yolo">YOLOv8</option>
+            <option value="resnet">ResNet</option>
+        </select>
+        <label>Confidence:</label>
+        <input type="number" name="confidence" step="0.1" min="0.1" max="1.0" value="0.5">
+        <button type="submit">📂 Upload Video</button>
     </form>
 
-    <h3>Video đang chạy</h3>
-    {% for id in stream_ids %}
-        <div>
-            <h4>Stream {{ id }}</h4>
-            <img src="{{ url_for('video_feed', stream_id=id) }}" width="480">
+    <h2>📺 Stream hiện tại:</h2>
+    {% for stream_id in streams %}
+        <div style="margin-bottom: 10px;">
+            <h4>Stream {{ stream_id }}</h4>
+            <img src="/video_feed/{{ stream_id }}" width="480">
+            <a href="/stop_stream/{{ stream_id }}">❌ Dừng Stream</a>
         </div>
     {% endfor %}
-
-    {% if image_result %}
-        <h3>Kết quả ảnh:</h3>
-        <img src="{{ image_result }}" width="480">
-    {% endif %}
 </body>
 </html>
