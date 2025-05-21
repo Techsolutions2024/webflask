@@ -1,115 +1,90 @@
-from flask import Flask, render_template, request, redirect, url_for, Response
-import os
-import cv2
-import uuid
-import threading
+from flask import Flask, request, send_file, Response, render_template
 from ultralytics import YOLO
+import cv2
+import os
+import numpy as np
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['VIDEO_UPLOADS'] = 'static/videos'
+UPLOAD_FOLDER = 'static/uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs(app.config['VIDEO_UPLOADS'], exist_ok=True)
+# Tạo thư mục uploads nếu chưa tồn tại
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-streams = {}
-image_result = None
+# Tải mô hình YOLOv8
+models = {
+    'yolov8n': YOLO('models/yolov8n.pt'),
+    'yolov8s': YOLO('models/yolov8s.pt'),
+    'yolov8m': YOLO('models/yolov8m.pt'),
+    'yolov8l': YOLO('models/yolov8l.pt')
+}
 
-class VideoStreamProcessor:
-    def __init__(self, source, model_type="yolo", confidence=0.5):
-        self.source = source
-        self.model_type = model_type
-        self.confidence = confidence
-        self.cap = cv2.VideoCapture(source)
-        self.running = True
-        self.frame = None
+# Danh sách định dạng được hỗ trợ
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'avi'}
 
-        if self.model_type == "yolo":
-            self.model = YOLO("yolov8n.pt")
-        else:
-            self.model = YOLO("yolov8n.pt")  # Placeholder for other models
+def allowed_file(filename, allowed_extensions):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
-        self.thread = threading.Thread(target=self.update, daemon=True)
-        self.thread.start()
-
-    def update(self):
-        while self.running and self.cap.isOpened():
-            ret, frame = self.cap.read()
-            if not ret:
-                break
-
-            results = self.model(frame, conf=self.confidence)
-            annotated = results[0].plot()
-            _, jpeg = cv2.imencode('.jpg', annotated)
-            self.frame = jpeg.tobytes()
-
-    def get_frame(self):
-        return self.frame
-
-    def stop(self):
-        self.running = False
-        self.cap.release()
-
-@app.route("/")
+@app.route('/')
 def index():
-    return render_template("index.html", streams=streams, image_result=image_result)
+    return render_template('index.html')
 
-@app.route("/detect_image", methods=["POST"])
-def detect_image():
-    global image_result
-    model_type = request.form.get("model_type")
-    confidence = float(request.form.get("confidence", 0.5))
-    file = request.files['image']
-
-    filename = str(uuid.uuid4()) + ".jpg"
-    path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(path)
-
-    model = YOLO("best.pt") if model_type == "yolo" else YOLO("yolov8n.pt")
-    results = model(path, conf=confidence)
-    output_path = path.replace(".jpg", "_result.jpg")
-    results[0].save(filename=output_path)
-    image_result = '/' + output_path
-    return redirect(url_for("index"))
-
-@app.route("/add_stream_webcam", methods=["POST"])
-def add_stream_webcam():
-    model_type = request.form.get("model_type", "yolo")
-    confidence = float(request.form.get("confidence", 0.5))
-    stream_id = str(uuid.uuid4())[:8]
-    streams[stream_id] = VideoStreamProcessor(0, model_type, confidence)
-    return redirect(url_for("index"))
-
-@app.route("/add_stream_video", methods=["POST"])
-def add_stream_video():
-    file = request.files.get("video_file")
-    model_type = request.form.get("model_type", "yolo")
-    confidence = float(request.form.get("confidence", 0.5))
-    if file:
-        filename = str(uuid.uuid4()) + "_" + file.filename
-        save_path = os.path.join(app.config['VIDEO_UPLOADS'], filename)
-        file.save(save_path)
-
-        stream_id = str(uuid.uuid4())[:8]
-        streams[stream_id] = VideoStreamProcessor(save_path, model_type, confidence)
-    return redirect(url_for("index"))
-
-@app.route("/video_feed/<stream_id>")
-def video_feed(stream_id):
-    def gen():
-        while True:
-            frame = streams[stream_id].get_frame()
-            if frame:
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-    return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-@app.route("/stop_stream/<stream_id>")
-def stop_stream(stream_id):
-    if stream_id in streams:
-        streams[stream_id].stop()
-        del streams[stream_id]
-    return redirect(url_for("index"))
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return Response('No file part', status=400)
+    file = request.files['file']
+    if not file or file.filename == '':
+        return Response('No selected file', status=400)
+    
+    model_name = request.form.get('model', 'yolov8n')
+    confidence = float(request.form.get('confidence', 0.5))
+    
+    # Kiểm tra định dạng tệp
+    if not (allowed_file(file.filename, ALLOWED_IMAGE_EXTENSIONS) or 
+            allowed_file(file.filename, ALLOWED_VIDEO_EXTENSIONS)):
+        return Response('Unsupported file format', status=400)
+    
+    # Lưu tệp
+    filename = file.filename
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(file_path)
+    
+    try:
+        # Chạy inference
+        model = models.get(model_name, models['yolov8n'])
+        result_path = os.path.join(app.config['UPLOAD_FOLDER'], 'result_' + filename)
+        
+        if allowed_file(filename, ALLOWED_IMAGE_EXTENSIONS):
+            # Xử lý ảnh
+            results = model(file_path, conf=confidence)
+            for r in results:
+                im_array = r.plot()  # Vẽ bounding box
+                cv2.imwrite(result_path, im_array)
+        else:
+            # Xử lý video
+            cap = cv2.VideoCapture(file_path)
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(result_path, fourcc, 30.0, 
+                                (int(cap.get(3)), int(cap.get(4))))
+            
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                results = model(frame, conf=confidence)
+                result_frame = results[0].plot()
+                out.write(result_frame)
+            
+            cap.release()
+            out.release()
+        
+        # Trả về URL của tệp kết quả
+        result_url = f'/static/uploads/result_{filename}'
+        return result_url
+    except Exception as e:
+        return Response(f'Error processing file: {str(e)}', status=500)
 
 if __name__ == '__main__':
     app.run(debug=True)

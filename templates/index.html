@@ -2,61 +2,73 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>YOLO Detection Web</title>
+    <title>Object Detection App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
-    <h1>🚀 Object Detection với YOLOv8</h1>
-
-    <h2>📸 Detect Ảnh</h2>
-    <form method="POST" action="/detect_image" enctype="multipart/form-data">
-        <label>Chọn ảnh:</label>
-        <input type="file" name="image" required><br>
-        <label>Chọn Model:</label>
-        <select name="model_type">
-            <option value="yolo">YOLOv8</option>
-            <option value="resnet">ResNet</option>
-        </select><br>
-        <label>Ngưỡng confidence (0.1 - 1.0):</label>
-        <input type="number" name="confidence" step="0.1" min="0.1" max="1.0" value="0.5"><br>
-        <button type="submit">Detect</button>
-    </form>
-    {% if image_result %}
-        <h3>Kết quả:</h3>
-        <img src="{{ image_result }}" width="640">
-    {% endif %}
-
-    <h2>🎥 Thêm luồng Video</h2>
-    <form method="POST" action="/add_stream_webcam">
-        <label>Model:</label>
-        <select name="model_type">
-            <option value="yolo">YOLOv8</option>
-            <option value="resnet">ResNet</option>
-        </select>
-        <label>Confidence:</label>
-        <input type="number" name="confidence" step="0.1" min="0.1" max="1.0" value="0.5">
-        <button type="submit">📷 Mở Webcam</button>
-    </form>
-
-    <form method="POST" action="/add_stream_video" enctype="multipart/form-data">
-        <label>Video File:</label>
-        <input type="file" name="video_file" accept="video/*" required>
-        <label>Model:</label>
-        <select name="model_type">
-            <option value="yolo">YOLOv8</option>
-            <option value="resnet">ResNet</option>
-        </select>
-        <label>Confidence:</label>
-        <input type="number" name="confidence" step="0.1" min="0.1" max="1.0" value="0.5">
-        <button type="submit">📂 Upload Video</button>
-    </form>
-
-    <h2>📺 Stream hiện tại:</h2>
-    {% for stream_id in streams %}
-        <div style="margin-bottom: 10px;">
-            <h4>Stream {{ stream_id }}</h4>
-            <img src="/video_feed/{{ stream_id }}" width="480">
-            <a href="/stop_stream/{{ stream_id }}">❌ Dừng Stream</a>
+    <header class="bg-dark text-white text-center py-3">
+        <h1>Object Detection App</h1>
+    </header>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 p-3">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5>Upload Image/Video</h5>
+                        <form id="upload-form" enctype="multipart/form-data">
+                            <input type="file" class="form-control" id="file-input" accept="image/*,video/*" required>
+                            <select class="form-select mt-2" id="model-select" required>
+                                <option value="yolov8n">YOLOv8n</option>
+                                <option value="yolov8s">YOLOv8s</option>
+                                <option value="yolov8m">YOLOv8m</option>
+                                <option value="yolov8l">YOLOv8l</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary mt-2">Upload</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5>Confidence Threshold</h5>
+                        <input type="range" class="form-range" id="confidence" min="0.1" max="1.0" step="0.1" value="0.5">
+                        <span id="confidence-value">0.5</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5>Camera Selection</h5>
+                        <select class="form-select" id="camera-select">
+                            <option value="">Select Camera</option>
+                        </select>
+                        <button class="btn btn-success mt-2" id="start-webcam">Start Webcam</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Main Content -->
+            <div class="col-md-9 p-3">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5>Preview</h5>
+                        <video id="webcam" autoplay style="width:100%; max-height:400px; display:none;"></video>
+                        <img id="preview-image" style="width:100%; max-height:400px; display:none;">
+                        <video id="preview-video" style="width:100%; max-height:400px; display:none;" controls></video>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5>Result</h5>
+                        <img id="result-image" style="width:100%; max-height:400px; display:none;">
+                        <video id="result-video" style="width:100%; max-height:400px; display:none;" controls></video>
+                    </div>
+                </div>
+            </div>
         </div>
-    {% endfor %}
+    </div>
+    <footer class="bg-dark text-white text-center py-3">
+        <p id="status">Ready</p>
+    </footer>
+    <script src="/static/js/script.js"></script>
 </body>
 </html>
