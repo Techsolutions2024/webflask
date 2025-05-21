@@ -1,20 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>YOLOv8 WebCam / Video Stream</title>
+    <title>YOLOv8 Video & Image Detect</title>
 </head>
 <body>
-    <h2>Chọn nguồn video</h2>
-    <form method="POST" enctype="multipart/form-data">
-        <label><input type="radio" name="source" value="webcam" checked> Webcam</label><br>
-        <label><input type="radio" name="source" value="video"> Video local</label><br>
-        <input type="file" name="video_file"><br><br>
-        <input type="submit" value="Bắt đầu">
+    <h2>Detect Ảnh</h2>
+    <form method="POST" enctype="multipart/form-data" action="/detect_image">
+        <label>Chọn mô hình:</label>
+        <select name="model_type">
+            <option value="yolo">YOLOv8</option>
+            <option value="custom">Model khác</option>
+        </select>
+        <input type="file" name="image">
+        <button type="submit">Detect ảnh</button>
     </form>
 
-    {% if stream %}
-    <h2>Kết quả xử lý YOLOv8:</h2>
-    <img src="{{ url_for('video_feed') }}" width="720">
+    <h2>Thêm video mới</h2>
+
+    <!-- Nút mở webcam -->
+    <form method="POST" action="/add_stream_webcam">
+        <input type="hidden" name="model_type" value="yolo">
+        <button type="submit">📷 Mở webcam</button>
+    </form>
+
+    <br>
+
+    <!-- Nút upload video -->
+    <form method="POST" enctype="multipart/form-data" action="/add_stream_video">
+        <label>Upload video (mp4, avi,...):</label>
+        <input type="file" name="video_file" accept="video/*" required>
+        <input type="hidden" name="model_type" value="yolo">
+        <button type="submit">📁 Upload video</button>
+    </form>
+
+    <h3>Video đang chạy</h3>
+    {% for id in stream_ids %}
+        <div>
+            <h4>Stream {{ id }}</h4>
+            <img src="{{ url_for('video_feed', stream_id=id) }}" width="480">
+        </div>
+    {% endfor %}
+
+    {% if image_result %}
+        <h3>Kết quả ảnh:</h3>
+        <img src="{{ image_result }}" width="480">
     {% endif %}
 </body>
 </html>
