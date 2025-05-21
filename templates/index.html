@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YOLOv8 WebCam / Video Stream</title>
+</head>
+<body>
+    <h2>Chọn nguồn video</h2>
+    <form method="POST" enctype="multipart/form-data">
+        <label><input type="radio" name="source" value="webcam" checked> Webcam</label><br>
+        <label><input type="radio" name="source" value="video"> Video local</label><br>
+        <input type="file" name="video_file"><br><br>
+        <input type="submit" value="Bắt đầu">
+    </form>
+
+    {% if stream %}
+    <h2>Kết quả xử lý YOLOv8:</h2>
+    <img src="{{ url_for('video_feed') }}" width="720">
+    {% endif %}
+</body>
+</html>
