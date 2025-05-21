@@ -31,15 +31,6 @@ ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'avi'}
 def allowed_file(filename, allowed_extensions):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
-def resize_frame(frame, max_size=(1280, 720)):
-    """Resize frame giữ tỷ lệ khung hình, tối đa max_size."""
-    h, w = frame.shape[:2]
-    scale = min(max_size[0] / w, max_size[1] / h)
-    if scale < 1:
-        new_w, new_h = int(w * scale), int(h * scale)
-        frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_AREA)
-    return frame
-
 @app.route('/')
 def index():
     logger.debug("Rendering index.html")
@@ -77,9 +68,7 @@ def upload_file():
         
         if allowed_file(filename, ALLOWED_IMAGE_EXTENSIONS):
             logger.debug(f"Processing image: {filename}")
-            img = cv2.imread(file_path)
-            img = resize_frame(img, max_size=(1280, 720))  # Resize ảnh nếu cần
-            results = model(img, conf=confidence)
+            results = model(file_path, conf=confidence)
             for r in results:
                 im_array = r.plot()  # Vẽ bounding box
                 cv2.imwrite(result_path, im_array)
@@ -95,10 +84,8 @@ def upload_file():
             width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
-            # Resize kích thước video nếu cần
-            if width > 1280 or height > 720:
-                width, height = min(1280, width), min(720, height)
             
+            # Sử dụng codec H264 cho video đầu ra
             fourcc = cv2.VideoWriter_fourcc(*'H264')
             out = cv2.VideoWriter(result_path, fourcc, fps, (width, height))
             if not out.isOpened():
@@ -110,7 +97,6 @@ def upload_file():
                 ret, frame = cap.read()
                 if not ret:
                     break
-                frame = resize_frame(frame, max_size=(1280, 720))  # Resize frame
                 results = model(frame, conf=confidence)
                 result_frame = results[0].plot()
                 out.write(result_frame)
