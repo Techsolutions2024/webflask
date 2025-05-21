@@ -18,8 +18,8 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Tải mô hình YOLOv8
 models = {
-    'yolov8n': YOLO('models/yolov8n.pt'),
-    'yolov8s': YOLO('models/yolov8s.pt'),
+    'yolov11n': YOLO('models/best.pt'),
+    'fastRCNN': YOLO('models/yolov8s.pt'),
     'yolov8m': YOLO('models/yolov8m.pt'),
     'yolov8l': YOLO('models/yolov8l.pt')
 }
@@ -46,7 +46,7 @@ def upload_file():
         logger.error("No selected file")
         return Response('No selected file', status=400)
     
-    model_name = request.form.get('model', 'yolov8n')
+    model_name = request.form.get('model', 'yolov11n')
     confidence = float(request.form.get('confidence', 0.5))
     
     # Kiểm tra định dạng tệp
@@ -63,7 +63,7 @@ def upload_file():
     
     try:
         # Chạy inference
-        model = models.get(model_name, models['yolov8n'])
+        model = models.get(model_name, models['yolov11n'])
         result_path = os.path.join(app.config['UPLOAD_FOLDER'], 'result_' + filename)
         
         if allowed_file(filename, ALLOWED_IMAGE_EXTENSIONS):
