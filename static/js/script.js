@@ -67,11 +67,15 @@ document.addEventListener('DOMContentLoaded', () => {
             previewImage.style.display = 'block';
             previewVideo.style.display = 'none';
             webcam.style.display = 'none';
+            resultImage.style.display = 'none';
+            resultVideo.style.display = 'none';
         } else if (file.type.startsWith('video/')) {
             previewVideo.src = fileURL;
             previewVideo.style.display = 'block';
             previewImage.style.display = 'none';
             webcam.style.display = 'none';
+            resultImage.style.display = 'none';
+            resultVideo.style.display = 'none';
         }
 
         // Gửi yêu cầu đến server
@@ -80,7 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('model', modelSelect.value);
         formData.append('confidence', confidenceSlider.value);
 
-        statusHannah
         status.textContent = 'Processing...';
         try {
             const response = await fetch('/upload', {
@@ -97,10 +100,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     resultVideo.src = resultURL;
                     resultVideo.style.display = 'block';
                     resultImage.style.display = 'none';
+                    resultVideo.load(); // Tải lại video để đảm bảo hiển thị
                 }
                 status.textContent = 'Completed';
             } else {
-                status.textContent = `Error: ${response.statusText}`;
+                const errorText = await response.text();
+                status.textContent = `Error: ${errorText}`;
             }
         } catch (err) {
             status.textContent = `Error: ${err.message}`;
