@@ -19,7 +19,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # Tải mô hình YOLOv8
 models = {
     'yolov11n': YOLO('models/best.pt'),
-    'fastRCNN': YOLO('models/yolov8s.pt'),
+    'fastRCNN': YOLO('models/best.pt'),
     'yolov8m': YOLO('models/yolov8m.pt'),
     'yolov8l': YOLO('models/yolov8l.pt')
 }
