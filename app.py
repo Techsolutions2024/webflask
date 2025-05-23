@@ -18,10 +18,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Tải mô hình YOLOv8
 models = {
-    'yolov11n': YOLO('models/best.pt'),
-    'fastRCNN': YOLO('models/taco.pt'),
-    'yolov8m': YOLO('models/yolov8m.pt'),
-    'yolov8l': YOLO('models/yolov8l.pt')
+    'yolov11n': YOLO('s.pt')
 }
 
 # Danh sách định dạng được hỗ trợ
