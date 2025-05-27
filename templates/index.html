@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🐶 Corgi LoRA Generator</title>
+</head>
+<body>
+    <h1>🐶 Corgi LoRA Generator</h1>
+    <form method="POST">
+        <label for="prompt">Prompt:</label>
+        <input type="text" id="prompt" name="prompt" placeholder="a cute corgi dog wearing sunglasses" required>
+        <button type="submit">🎨 Tạo ảnh</button>
+    </form>
+    {% if image_path %}
+        <h2>Ảnh tạo ra:</h2>
+        <img src="{{ image_path }}" alt="Generated image" style="max-width: 500px;">
+    {% endif %}
+</body>
+</html>
